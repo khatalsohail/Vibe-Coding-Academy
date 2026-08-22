@@ -1,0 +1,6 @@
+{
+  "name": "Vibe Coding Academy",
+  "description": "An interactive learning platform and AI code playground with intent-to-architecture visualizer, context builder, hallucination review challenges, and Google Drive project synchronization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
