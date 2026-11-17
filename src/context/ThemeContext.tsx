@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ThemeMode, ThemeContextType } from '../types';
 
-const THEME_STORAGE_KEY = 'vibe_edu_theme';
+const THEME_STORAGE_KEY = 'vibe_edu_theme_swiss_v2';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -12,8 +12,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (savedTheme === 'dark' || savedTheme === 'light') {
       return savedTheme;
     }
-    // Default to dark mode for VIBE_CODE.edu
-    return 'dark';
+    // Default to Swiss Modernism 2.0 crisp white ground
+    return 'light';
   });
 
   useEffect(() => {

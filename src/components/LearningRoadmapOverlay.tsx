@@ -2,10 +2,9 @@ import React, { useState, useMemo } from 'react';
 import {
   X,
   Compass,
-  CheckCircle2,
+  Check,
   Lock,
   Sparkles,
-  ArrowRight,
   ChevronRight,
   ShieldCheck,
   Server,
@@ -18,15 +17,10 @@ import {
   KeyRound,
   Info,
   Trophy,
-  Filter,
   Play,
   RotateCcw,
-  Zap,
-  HelpCircle,
-  Maximize2,
-  Minimize2,
 } from 'lucide-react';
-import { RoadmapNode, ConceptCategory } from '../types';
+import { RoadmapNode } from '../types';
 import { INITIAL_ROADMAP_NODES, ROADMAP_CONNECTIONS } from '../data/roadmapData';
 import { fireMilestoneConfetti, fireTaskConfetti } from '../utils/confetti';
 
@@ -41,7 +35,7 @@ export const LearningRoadmapOverlay: React.FC<LearningRoadmapOverlayProps> = ({
   isOpen,
   onClose,
   onNavigateTab,
-  onAwardXP = (_amount?: number) => {},
+  onAwardXP = (_amount: number) => {},
 }) => {
   const [nodes, setNodes] = useState<RoadmapNode[]>(INITIAL_ROADMAP_NODES);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -52,28 +46,24 @@ export const LearningRoadmapOverlay: React.FC<LearningRoadmapOverlayProps> = ({
     return nodes.find((n) => n.id === selectedNodeId) || null;
   }, [nodes, selectedNodeId]);
 
-  // Calculate Roadmap Progress
-  const completedCount = useMemo(() => nodes.filter((n) => n.status === 'completed').length, [nodes]);
-  const unlockedCount = useMemo(() => nodes.filter((n) => n.status !== 'locked').length, [nodes]);
+  const completedCount = useMemo(
+    () => nodes.filter((n) => n.status === 'completed').length,
+    [nodes]
+  );
   const totalCount = nodes.length;
   const progressPercent = Math.round((completedCount / Math.max(1, totalCount)) * 100);
   const totalEarnedXP = useMemo(
-    () => nodes.filter((n) => n.status === 'completed').reduce((acc, n) => acc + n.xpReward, 0),
+    () =>
+      nodes
+        .filter((n) => n.status === 'completed')
+        .reduce((acc, n) => acc + n.xpReward, 0),
     [nodes]
   );
 
-  // Filter nodes if needed
-  const filteredNodes = useMemo(() => {
-    if (categoryFilter === 'all') return nodes;
-    return nodes.filter((n) => n.category === categoryFilter);
-  }, [nodes, categoryFilter]);
-
-  // Handle Complete Node & Unlock Successors
   const handleCompleteNode = (nodeId: string, event?: React.MouseEvent) => {
     let earnedXP = 0;
 
     setNodes((prevNodes) => {
-      // 1. Mark target node as completed
       const updated = prevNodes.map((node) => {
         if (node.id === nodeId && node.status !== 'completed') {
           earnedXP = node.xpReward;
@@ -82,12 +72,15 @@ export const LearningRoadmapOverlay: React.FC<LearningRoadmapOverlayProps> = ({
         return node;
       });
 
-      // 2. Check and unlock downstream nodes whose prerequisites are now all completed
-      const completedIds = new Set(updated.filter((n) => n.status === 'completed').map((n) => n.id));
+      const completedIds = new Set(
+        updated.filter((n) => n.status === 'completed').map((n) => n.id)
+      );
 
       return updated.map((node) => {
         if (node.status === 'locked') {
-          const allPrereqsMet = node.prerequisites.every((prereqId) => completedIds.has(prereqId));
+          const allPrereqsMet = node.prerequisites.every((prereqId) =>
+            completedIds.has(prereqId)
+          );
           if (allPrereqsMet) {
             return { ...node, status: 'unlocked' as const };
           }
@@ -116,7 +109,7 @@ export const LearningRoadmapOverlay: React.FC<LearningRoadmapOverlayProps> = ({
     setSelectedNodeId(null);
   };
 
-  const getNodeIcon = (iconName: string, className: string = 'w-5 h-5') => {
+  const getNodeIcon = (iconName: string, className: string = 'w-4 h-4') => {
     switch (iconName) {
       case 'Layout':
         return <Layout className={className} />;
@@ -143,161 +136,123 @@ export const LearningRoadmapOverlay: React.FC<LearningRoadmapOverlayProps> = ({
     }
   };
 
-  const getCategoryBadgeColor = (category: ConceptCategory) => {
-    switch (category) {
-      case 'ui':
-        return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
-      case 'ingress':
-        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-      case 'auth':
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-      case 'ai':
-        return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
-      case 'database':
-        return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
-      case 'security':
-        return 'bg-rose-500/20 text-rose-300 border-rose-500/40';
-      case 'deployment':
-        return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40';
-      default:
-        return 'bg-slate-800 text-slate-300 border-slate-700';
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
     <div
       id="learning-roadmap-modal-root"
-      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-300"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="roadmap-dialog-title"
+      className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-3 sm:p-6"
+      onClick={onClose}
     >
       <div
         id="roadmap-dialog-container"
-        className="bg-slate-900 border border-cyan-500/40 rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative"
+        className="bg-[var(--white)] border border-[var(--black)] w-full max-w-7xl max-h-[92vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* TOP ROADMAP HEADER */}
-        <div className="p-4 sm:p-5 bg-slate-950 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* TOP HEADER */}
+        <div className="p-4 sm:p-5 bg-[var(--white)] border-b border-[var(--black)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center gap-1.5">
-                <Compass className="w-3.5 h-3.5 text-cyan-400" />
-                VIBE ARCHITECTURE CURRICULUM
-              </span>
-              <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
-                Interactive Concept Roadmap
-              </span>
-            </div>
-            <h2 className="text-lg sm:text-xl font-bold text-white font-mono mt-1 flex items-center gap-2">
+            <div className="eyebrow font-mono">Vibe Architecture Curriculum</div>
+            <h2 id="roadmap-dialog-title" className="text-lg sm:text-xl font-bold text-[var(--black)] mt-0.5">
               Full-Stack Architectural Learning Roadmap
             </h2>
           </div>
 
-          {/* Progress & Quick Actions */}
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-900 px-3.5 py-1.5 rounded-2xl border border-slate-800 text-right font-mono hidden md:block">
-              <div className="text-[9px] uppercase text-slate-400">Mastery Progress</div>
-              <div className="text-xs font-bold text-cyan-400">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="bg-[var(--gray)] px-3 py-1.5 border border-[var(--rule)] text-right font-mono hidden md:block tabular-nums">
+              <div className="text-[10px] uppercase text-[var(--text-muted)]">Mastery Progress</div>
+              <div className="text-xs font-bold text-[var(--black)]">
                 {completedCount}/{totalCount} Nodes ({progressPercent}%) • +{totalEarnedXP} XP
               </div>
             </div>
 
             <button
+              type="button"
               onClick={handleResetRoadmap}
-              title="Reset Sample Progress"
-              className="p-2 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 transition text-xs font-mono flex items-center gap-1"
+              className="button button--outline !py-2 !px-3 !text-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Reset</span>
+              <span>Reset</span>
             </button>
 
             <button
               id="close-roadmap-btn"
+              type="button"
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 transition"
+              aria-label="Close roadmap modal"
+              className="p-2 border border-[var(--black)] bg-[var(--white)] text-[var(--black)] hover:bg-[var(--red)] hover:text-white hover:border-[var(--red)] transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* SUBHEADER: CATEGORY FILTER & LEGEND */}
-        <div className="px-4 py-2.5 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-          <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-            <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="text-[10px] uppercase text-slate-400 font-bold mr-1 shrink-0">Filter:</span>
+        {/* FILTER & LEGEND STRIP */}
+        <div className="px-4 py-2.5 bg-[var(--gray)] border-b border-[var(--rule)] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
             {[
               { id: 'all', label: 'All Tiers' },
               { id: 'ui', label: 'Tier 1: UI' },
               { id: 'ingress', label: 'Tier 2: Ingress' },
-              { id: 'auth', label: 'Auth & Identity' },
-              { id: 'ai', label: 'Tier 3: Gemini AI' },
-              { id: 'database', label: 'Tier 4: Persistence' },
+              { id: 'auth', label: 'Auth' },
+              { id: 'ai', label: 'Tier 3: AI' },
+              { id: 'database', label: 'Tier 4: DB' },
               { id: 'security', label: 'Zero-Trust' },
               { id: 'deployment', label: 'Tier 5: Cloud Run' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setCategoryFilter(tab.id)}
-                className={`px-2.5 py-1 rounded-xl text-[10px] uppercase font-bold transition shrink-0 ${
-                  categoryFilter === tab.id
-                    ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
-                    : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+            ].map((tab) => {
+              const active = categoryFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setCategoryFilter(tab.id)}
+                  className={`px-2.5 py-1 border text-[10px] uppercase font-semibold transition-colors shrink-0 ${
+                    active
+                      ? 'bg-[var(--black)] text-[var(--white)] border-[var(--black)]'
+                      : 'bg-[var(--white)] text-[var(--text-muted)] border-[var(--rule)] hover:border-[var(--black)] hover:text-[var(--black)]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Status Legend */}
-          <div className="flex items-center gap-3 text-[10px] text-slate-400 shrink-0">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"></span>
+          <div className="flex items-center gap-4 text-[10px] text-[var(--text-muted)] shrink-0">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 bg-[var(--black)] inline-block"></span>
               <span>Mastered</span>
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-              <span>Ready to Learn</span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 bg-[var(--red)] inline-block"></span>
+              <span>Ready</span>
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 bg-[var(--rule)] border border-[var(--text-muted)] inline-block"></span>
               <span>Locked</span>
             </span>
           </div>
         </div>
 
-        {/* MAIN BODY: 2-COLUMN LAYOUT (MAP CANVAS + INSPECTOR PANEL) */}
-        <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 relative min-h-[420px]">
-          {/* LEFT: SVG CONNECTING LINE MAP CANVAS (7 cols on lg) */}
-          <div className="lg:col-span-7 p-4 sm:p-6 overflow-auto bg-slate-950/40 relative flex flex-col justify-between">
-            {/* SVG Connecting Map Stage */}
-            <div className="relative min-w-[700px] h-[400px] select-none">
-              {/* Interactive SVG Connector Overlay */}
+        {/* MAIN 2-COLUMN CANVAS + INSPECTOR */}
+        <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[420px]">
+          {/* LEFT (8 cols): Interactive Node Map */}
+          <div className="lg:col-span-8 p-4 sm:p-5 overflow-auto bg-[var(--white)] flex flex-col justify-between">
+            <div className="relative min-w-[796px] h-[380px] select-none">
+              {/* Tier Column Headers */}
+              <div className="grid grid-cols-5 gap-2 px-3 pt-1 pb-2 border-b border-[var(--rule)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">
+                <div>01 / Client UI</div>
+                <div>02 / Ingress &amp; Auth</div>
+                <div>03 / Gemini AI</div>
+                <div>04 / Data &amp; Drive</div>
+                <div>05 / Cloud Run</div>
+              </div>
+
+              {/* Orthogonal / Bezier SVG Paths */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                <defs>
-                  {/* Linear Gradients for Active Lines */}
-                  <linearGradient id="unlockedGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#06b6d4" />
-                    <stop offset="50%" stopColor="#10b981" />
-                    <stop offset="100%" stopColor="#38bdf8" />
-                  </linearGradient>
-
-                  <linearGradient id="completedGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#10b981" />
-                    <stop offset="100%" stopColor="#06b6d4" />
-                  </linearGradient>
-
-                  {/* Filter for glowing neon line effect */}
-                  <filter id="neonFilter" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="2.5" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-
-                {/* Render Connecting Orthogonal / Bezier Paths */}
                 {ROADMAP_CONNECTIONS.map((conn, idx) => {
                   const source = nodes.find((n) => n.id === conn.from);
                   const target = nodes.find((n) => n.id === conn.to);
@@ -312,54 +267,52 @@ export const LearningRoadmapOverlay: React.FC<LearningRoadmapOverlayProps> = ({
                     selectedNodeId === source.id ||
                     selectedNodeId === target.id;
 
-                  // Compute Bezier Curve points (Center of nodes)
-                  const startX = source.x + 85;
-                  const startY = source.y + 40;
-                  const endX = target.x + 85;
-                  const endY = target.y + 40;
-                  const midX = (startX + endX) / 2;
+                  const sX = (source.tierLevel - 1) * 158 + 12;
+                  const sY = source.y < 200 ? 48 : 206;
+                  const tX = (target.tierLevel - 1) * 158 + 12;
+                  const tY = target.y < 200 ? 48 : 206;
 
+                  const startX = sX + 73;
+                  const startY = sY + 58;
+                  const endX = tX + 73;
+                  const endY = tY + 58;
+                  const midX = (startX + endX) / 2;
                   const pathD = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
 
                   return (
-                    <g key={idx}>
-                      {/* Background Shadow / Inactive Line */}
-                      <path
-                        d={pathD}
-                        fill="none"
-                        stroke={isHovered ? '#0ea5e9' : isPathActive ? '#059669' : '#1e293b'}
-                        strokeWidth={isHovered ? 4 : isPathActive ? 3 : 2}
-                        strokeDasharray={isPathActive ? 'none' : '4 4'}
-                        opacity={isPathActive ? 0.9 : 0.4}
-                        filter={isPathActive ? 'url(#neonFilter)' : undefined}
-                      />
-
-                      {/* Animated Glow Flow Pulse along Completed Routes */}
-                      {isPathActive && (
-                        <circle r="3.5" fill="#38bdf8" className="animate-pulse">
-                          <animateMotion path={pathD} dur="3s" repeatCount="indefinite" />
-                        </circle>
-                      )}
-                    </g>
+                    <path
+                      key={idx}
+                      d={pathD}
+                      fill="none"
+                      stroke={
+                        isHovered
+                          ? '#DC2626'
+                          : isPathActive
+                          ? '#000000'
+                          : '#D1D5DB'
+                      }
+                      strokeWidth={isHovered ? 2.5 : isPathActive ? 2 : 1.5}
+                      strokeDasharray={isPathActive ? 'none' : '4 4'}
+                    />
                   );
                 })}
               </svg>
 
-              {/* Render Interactive Roadmap Nodes */}
+              {/* Node Cards */}
               {nodes.map((node) => {
                 const isSelected = selectedNodeId === node.id;
-                const isHovered = hoveredNodeId === node.id;
                 const isCompleted = node.status === 'completed';
                 const isUnlocked = node.status === 'unlocked';
                 const isLocked = node.status === 'locked';
-
                 const isDimmed = categoryFilter !== 'all' && node.category !== categoryFilter;
+                const mappedLeft = (node.tierLevel - 1) * 158 + 12;
+                const mappedTop = node.y < 200 ? 48 : 206;
 
                 return (
                   <div
                     key={node.id}
                     id={`roadmap-node-${node.id}`}
-                    style={{ left: `${node.x}px`, top: `${node.y}px` }}
+                    style={{ left: `${mappedLeft}px`, top: `${mappedTop}px` }}
                     onMouseEnter={() => setHoveredNodeId(node.id)}
                     onMouseLeave={() => setHoveredNodeId(null)}
                     onClick={(e) => {
@@ -372,193 +325,153 @@ export const LearningRoadmapOverlay: React.FC<LearningRoadmapOverlayProps> = ({
                         );
                       }
                     }}
-                    className={`absolute w-[170px] rounded-2xl p-3 border transition-all cursor-pointer z-10 select-none shadow-xl flex flex-col justify-between ${
-                      isDimmed ? 'opacity-25 grayscale' : 'opacity-100'
+                    className={`absolute w-[146px] p-2.5 border transition-colors cursor-pointer z-10 select-none flex flex-col justify-between ${
+                      isDimmed ? 'opacity-25' : 'opacity-100'
                     } ${
                       isSelected
-                        ? 'ring-2 ring-cyan-400 scale-105 shadow-cyan-500/30'
-                        : isHovered
-                        ? 'scale-105'
-                        : ''
-                    } ${
-                      isCompleted
-                        ? 'bg-slate-900 border-emerald-500/60 text-slate-200 shadow-emerald-950/40'
+                        ? 'border-2 border-[var(--red)] bg-[var(--gray)]'
+                        : isCompleted
+                        ? 'bg-[var(--white)] border-[var(--black)]'
                         : isUnlocked
-                        ? 'bg-slate-900 border-cyan-500/60 text-white shadow-cyan-950/40 hover:border-cyan-400'
-                        : 'bg-slate-950/90 border-slate-800 text-slate-500'
+                        ? 'bg-[var(--gray)] border-[var(--black)] hover:border-[var(--red)]'
+                        : 'bg-[var(--white)] border-[var(--rule)] text-[var(--text-muted)]'
                     }`}
                   >
                     <div>
-                      {/* Top Header in Node Card */}
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span
-                          className={`text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded ${getCategoryBadgeColor(
-                            node.category
-                          )}`}
-                        >
+                      <div className="flex items-center justify-between mb-1.5 font-mono text-[9px]">
+                        <span className="uppercase font-bold text-[var(--text-muted)]">
                           {node.category}
                         </span>
-
-                        <span className="text-[9px] font-mono font-bold text-amber-400">
+                        <span className="font-bold text-[var(--red)] tabular-nums">
                           +{node.xpReward} XP
                         </span>
                       </div>
 
-                      {/* Icon + Title */}
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-1.5 mb-1">
                         <div
-                          className={`w-7 h-7 rounded-xl flex items-center justify-center border shrink-0 ${
+                          className={`w-5 h-5 border flex items-center justify-center shrink-0 ${
                             isCompleted
-                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                              ? 'bg-[var(--black)] text-[var(--white)] border-[var(--black)]'
                               : isUnlocked
-                              ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40'
-                              : 'bg-slate-900 text-slate-600 border-slate-800'
+                              ? 'bg-[var(--red)] text-white border-[var(--red)]'
+                              : 'bg-[var(--gray)] text-[var(--text-muted)] border-[var(--rule)]'
                           }`}
                         >
                           {isLocked ? (
-                            <Lock className="w-3.5 h-3.5" />
+                            <Lock className="w-2.5 h-2.5" />
                           ) : (
-                            getNodeIcon(node.iconName, 'w-3.5 h-3.5')
+                            getNodeIcon(node.iconName, 'w-2.5 h-2.5')
                           )}
                         </div>
-
-                        <h4
-                          className={`text-[11px] font-bold font-mono leading-tight line-clamp-1 ${
-                            isCompleted ? 'text-emerald-300' : isUnlocked ? 'text-white' : 'text-slate-400'
-                          }`}
-                        >
+                        <h4 className="text-[11px] font-bold text-[var(--black)] leading-tight line-clamp-1">
                           {node.title}
                         </h4>
                       </div>
 
-                      <p className="text-[9px] text-slate-400 line-clamp-2 leading-tight">
+                      <p className="text-[10px] text-[var(--text-muted)] line-clamp-2 leading-tight">
                         {node.shortDesc}
                       </p>
                     </div>
 
-                    {/* Status Pill on bottom of node */}
-                    <div className="pt-1.5 mt-1 border-t border-slate-800/80 flex items-center justify-between text-[9px] font-mono">
+                    <div className="pt-1.5 mt-1.5 border-t border-[var(--rule)] flex items-center justify-between text-[9px] font-mono">
                       {isCompleted ? (
-                        <span className="text-emerald-400 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Mastered</span>
+                        <span className="text-[var(--black)] font-bold flex items-center gap-1">
+                          <Check className="w-3 h-3 text-[var(--red)]" />
+                          <span>MASTERED</span>
                         </span>
                       ) : isUnlocked ? (
-                        <span className="text-cyan-400 font-bold flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" />
-                          <span>Ready</span>
-                        </span>
+                        <span className="text-[var(--red)] font-bold">READY</span>
                       ) : (
-                        <span className="text-slate-400 flex items-center gap-1">
-                          <Lock className="w-3 h-3" />
-                          <span>Locked</span>
-                        </span>
+                        <span className="text-[var(--text-muted)]">LOCKED</span>
                       )}
-
-                      <span className="text-slate-400 text-[8px]">T{node.tierLevel}</span>
+                      <span className="text-[var(--text-muted)]">T{node.tierLevel}</span>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* Bottom Map Canvas Guide */}
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
+            <div className="mt-3 pt-3 border-t border-[var(--rule)] flex items-center justify-between text-[11px] font-mono text-[var(--text-muted)]">
               <div className="flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Click any node to open architecture deconstruction & practice.</span>
+                <Info className="w-3.5 h-3.5 text-[var(--black)]" />
+                <span>Click any node to inspect architecture and unlock downstream layers.</span>
               </div>
-              <span className="text-cyan-400 font-bold">5 Progressive Cloud Tiers</span>
+              <span className="text-[var(--black)] font-semibold">5 Cloud Tiers</span>
             </div>
           </div>
 
-          {/* RIGHT: CONCEPT INSPECTOR & DECONSTRUCTION DRAWER (5 cols on lg) */}
+          {/* RIGHT (4 cols): Concept Inspector Drawer */}
           <div
             id="roadmap-node-inspector"
-            className="lg:col-span-5 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-900/90 p-5 sm:p-6 overflow-y-auto flex flex-col justify-between space-y-4"
+            className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-[var(--black)] bg-[var(--gray)] p-5 overflow-y-auto flex flex-col justify-between space-y-4"
           >
             {selectedNode ? (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                {/* Header with Title and Tier */}
+              <div className="space-y-4">
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span
-                      className={`text-[9px] font-mono uppercase px-2.5 py-0.5 rounded-full border font-bold ${getCategoryBadgeColor(
-                        selectedNode.category
-                      )}`}
-                    >
-                      {selectedNode.tierName} • {selectedNode.category.toUpperCase()}
+                  <div className="flex items-center justify-between mb-1.5 font-mono text-[10px]">
+                    <span className="px-2 py-0.5 bg-[var(--black)] text-[var(--white)] uppercase font-bold">
+                      {selectedNode.tierName} • {selectedNode.category}
                     </span>
-
-                    <span className="text-xs font-mono font-bold text-amber-400">
-                      +{selectedNode.xpReward} XP BOUNTY
+                    <span className="font-bold text-[var(--red)] tabular-nums">
+                      +{selectedNode.xpReward} XP
                     </span>
                   </div>
-
-                  <h3 className="text-base sm:text-lg font-bold text-white font-mono mt-1 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-[var(--black)] mt-1">
                     {selectedNode.title}
                   </h3>
-                  <p className="text-xs text-slate-300 mt-1 font-sans">{selectedNode.shortDesc}</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{selectedNode.shortDesc}</p>
                 </div>
 
-                {/* Beginner Metaphor Box */}
-                <div className="p-3.5 bg-cyan-950/30 border border-cyan-800/50 rounded-2xl space-y-1">
-                  <div className="flex items-center gap-1.5 text-cyan-400 font-mono font-bold text-xs">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>💡 Beginner Metaphor</span>
-                  </div>
-                  <p className="text-xs text-cyan-200 leading-relaxed font-sans">
+                <div className="p-3.5 bg-[var(--white)] border border-[var(--black)] space-y-1">
+                  <div className="eyebrow font-mono">Beginner Metaphor</div>
+                  <p className="text-xs text-[var(--black)] leading-relaxed">
                     {selectedNode.beginnerMetaphor}
                   </p>
                 </div>
 
-                {/* Full-Stack Architectural Role */}
-                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-slate-300 font-mono font-bold text-xs">
-                    <Server className="w-3.5 h-3.5 text-purple-400" />
-                    <span>🏗️ Full-Stack System Architecture Role</span>
+                <div className="p-3.5 bg-[var(--white)] border border-[var(--rule)] space-y-1">
+                  <div className="text-[10px] font-mono uppercase text-[var(--text-muted)] font-bold">
+                    Full-Stack System Architecture Role
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed font-sans">
+                  <p className="text-xs text-[var(--black)] leading-relaxed">
                     {selectedNode.architectureRole}
                   </p>
                 </div>
 
-                {/* Deep Dive Explanation */}
                 <div className="space-y-1">
-                  <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
+                  <span className="text-[10px] font-mono uppercase text-[var(--text-muted)] font-bold block">
                     Engineering Deep Dive
                   </span>
-                  <p className="text-xs text-slate-300 leading-relaxed font-sans bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+                  <p className="text-xs text-[var(--black)] leading-relaxed bg-[var(--white)] p-3 border border-[var(--rule)]">
                     {selectedNode.fullExplanation}
                   </p>
                 </div>
 
-                {/* Key Skills Tags */}
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
-                    Verifiable Skills Learned
+                  <span className="text-[10px] font-mono uppercase text-[var(--text-muted)] font-bold block">
+                    Verifiable Skills
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedNode.keySkills.map((skill, i) => (
                       <span
                         key={i}
-                        className="px-2 py-0.5 rounded-lg bg-slate-950 text-slate-300 border border-slate-800 text-[10px] font-mono"
+                        className="px-2 py-0.5 bg-[var(--white)] text-[var(--black)] border border-[var(--rule)] text-[10px] font-mono"
                       >
-                        ✓ {skill}
+                        {skill}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="pt-2 border-t border-slate-800 space-y-2">
+                <div className="pt-3 border-t border-[var(--rule)] space-y-2">
                   {selectedNode.status === 'completed' ? (
-                    <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-2xl flex items-center justify-between text-xs font-mono text-emerald-300">
-                      <span className="flex items-center gap-1.5 font-bold">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <span>Concept Mastered & Verified</span>
+                    <div className="p-3 bg-[var(--white)] border border-[var(--black)] flex items-center justify-between text-xs font-mono">
+                      <span className="flex items-center gap-1.5 font-bold text-[var(--black)]">
+                        <Check className="w-4 h-4 text-[var(--red)]" />
+                        <span>Concept Mastered</span>
                       </span>
                       <button
+                        type="button"
                         onClick={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           fireMilestoneConfetti(
@@ -566,58 +479,57 @@ export const LearningRoadmapOverlay: React.FC<LearningRoadmapOverlayProps> = ({
                             (rect.top + rect.height / 2) / window.innerHeight
                           );
                         }}
-                        className="text-[10px] text-cyan-400 hover:underline flex items-center gap-1 font-bold"
+                        className="text-[11px] text-[var(--red)] hover:underline font-bold"
                       >
-                        <Sparkles className="w-3 h-3" />
                         Celebrate
                       </button>
                     </div>
                   ) : (
                     <button
                       id="master-node-btn"
+                      type="button"
                       onClick={(e) => handleCompleteNode(selectedNode.id, e)}
-                      className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-mono font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+                      className="button w-full"
                     >
                       <Trophy className="w-4 h-4" />
-                      <span>Mark Concept as Mastered (+{selectedNode.xpReward} XP)</span>
+                      <span>Mark Concept Mastered (+{selectedNode.xpReward} XP)</span>
                     </button>
                   )}
 
                   {selectedNode.actionTab && (
                     <button
+                      type="button"
                       onClick={() => {
                         onClose();
                         onNavigateTab(selectedNode.actionTab!);
                       }}
-                      className="w-full py-2 bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-cyan-800/60 font-mono font-bold text-xs rounded-xl transition flex items-center justify-center gap-2"
+                      className="button button--outline w-full"
                     >
-                      <Play className="w-3.5 h-3.5 fill-cyan-400 text-cyan-400" />
-                      <span>
-                        Practice in {selectedNode.actionTab.toUpperCase()} Workspace
-                      </span>
+                      <Play className="w-3.5 h-3.5" />
+                      <span>Practice in {selectedNode.actionTab.toUpperCase()}</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
               </div>
             ) : (
-              /* Default Empty State when no node selected */
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 text-slate-400">
-                <div className="w-14 h-14 rounded-3xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-inner">
-                  <Compass className="w-7 h-7" />
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
+                <div className="w-12 h-12 border border-[var(--black)] bg-[var(--white)] flex items-center justify-center text-[var(--black)]">
+                  <Compass className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white font-mono">Select a Roadmap Node</h4>
-                  <p className="text-xs text-slate-400 max-w-xs mt-1">
-                    Click any node on the connecting transit map to inspect its architectural purpose, beginner metaphor, and unlock downstream skills.
+                  <h4 className="text-sm font-bold text-[var(--black)]">Select a Roadmap Node</h4>
+                  <p className="text-xs text-[var(--text-muted)] max-w-xs mt-1">
+                    Click any node on the transit map to inspect its architectural purpose and unlock downstream layers.
                   </p>
                 </div>
-                <div className="pt-2 flex flex-wrap justify-center gap-1.5 max-w-xs">
+                <div className="flex flex-wrap justify-center gap-1.5 max-w-xs">
                   {nodes.slice(0, 3).map((n) => (
                     <button
                       key={n.id}
+                      type="button"
                       onClick={() => setSelectedNodeId(n.id)}
-                      className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 text-[10px] font-mono text-cyan-300 rounded-lg border border-slate-800 transition"
+                      className="px-2.5 py-1 bg-[var(--white)] hover:bg-[var(--black)] hover:text-[var(--white)] text-[10px] font-mono text-[var(--black)] border border-[var(--black)] transition-colors"
                     >
                       {n.title}
                     </button>

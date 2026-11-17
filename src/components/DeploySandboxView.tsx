@@ -1,18 +1,10 @@
 import React, { useState } from 'react';
 import {
   Rocket,
-  Play,
-  RotateCcw,
-  CheckCircle2,
   ExternalLink,
   Terminal,
   Server,
-  ShieldCheck,
   FolderGit2,
-  Check,
-  HardDrive,
-  Activity,
-  Cpu,
 } from 'lucide-react';
 import { DeploymentLog, DeploymentProject, GeneratedSystemSpec } from '../types';
 import { DriveService } from '../services/driveService';
@@ -45,7 +37,6 @@ export const DeploySandboxView: React.FC<DeploySandboxViewProps> = ({
   });
 
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'env'>('overview');
   const [logs, setLogs] = useState<DeploymentLog[]>([
     { id: '1', timestamp: '21:58:01', stage: 'Initiated', message: 'Pulling base image node:22-alpine...', type: 'info' },
     { id: '2', timestamp: '21:58:04', stage: 'Compiling', message: 'Vite build completed (0.8s). Generated static bundle.', type: 'info' },
@@ -107,167 +98,145 @@ export const DeploySandboxView: React.FC<DeploySandboxViewProps> = ({
   };
 
   return (
-    <div id="deploy-sandbox-view" className="space-y-6 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800/80">
-              Simulated 1-Click Hosting
-            </span>
-            <span className="text-xs text-slate-400 font-mono">Cloud Run & Vercel Sandbox</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight mt-1">
-            Deployment & Production Ingress
-          </h1>
-          <p className="text-xs text-slate-300 max-w-2xl mt-1 leading-relaxed">
-            Experience how AI-generated prototypes transition into isolated, production-grade cloud containers.
-            Monitor health checks, inspect build logs, and export deployment manifests to Google Drive.
+    <div id="deploy-sandbox-view" className="w-full">
+      {/* Header Band */}
+      <section className="swiss-grid swiss-grid--flush-top items-end">
+        <div className="main space-y-2">
+          <div className="eyebrow font-mono">Simulated 1-Click Hosting • Cloud Run Sandbox</div>
+          <h1>Deployment &amp; Production Ingress</h1>
+          <p className="lead max-w-2xl">
+            Inspect how AI-generated prototypes transition into isolated, production-grade cloud containers with health checks and Drive manifests.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="aside flex flex-wrap sm:flex-nowrap items-center justify-start md:justify-end gap-2.5">
           <button
+            type="button"
             onClick={handleSyncToDrive}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${
-              syncSaved
-                ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                : 'bg-slate-950 text-blue-300 border-blue-900/60 hover:bg-slate-800'
-            }`}
+            className="button button--outline"
           >
-            <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />
-            <span>{syncSaved ? 'Manifest Synced to Drive' : 'Sync Manifest to Drive'}</span>
+            <FolderGit2 className="w-4 h-4" />
+            <span>{syncSaved ? 'Manifest Synced' : 'Sync Manifest'}</span>
           </button>
 
           <button
             id="trigger-redeploy-btn"
+            type="button"
             onClick={handleTriggerDeploy}
             disabled={isDeploying}
-            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-600/20"
+            className="button"
           >
-            {isDeploying ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Building Container...</span>
-              </>
-            ) : (
-              <>
-                <Rocket className="w-3.5 h-3.5" />
-                <span>Re-Deploy Container</span>
-              </>
-            )}
+            <Rocket className="w-4 h-4" />
+            <span>{isDeploying ? 'Building Container...' : 'Re-Deploy Container'}</span>
           </button>
         </div>
-      </div>
+      </section>
 
-      {/* Main Sandbox Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Container State & Live Endpoint (6 cols) */}
-        <div className="lg:col-span-6 space-y-5">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      {/* Main 2-Column Deployment Grid */}
+      <section className="swiss-grid">
+        <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column (6 cols): Container State & Specs */}
+          <div className="lg:col-span-6 bg-[var(--white)] border border-[var(--black)] p-5 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--rule)]">
               <div className="flex items-center gap-2">
-                <Server className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                <Server className="w-4 h-4 text-[var(--black)]" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--black)]">
                   Container Instance State
                 </span>
               </div>
-              <span className="flex items-center gap-1 text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="text-[11px] font-mono px-2.5 py-0.5 bg-[var(--black)] text-[var(--white)] font-semibold uppercase">
                 {project.status}
               </span>
             </div>
 
-            {/* Live Domain Card */}
-            <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Live Service URL</span>
+            <div className="p-4 bg-[var(--gray)] border border-[var(--rule)] space-y-2">
+              <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] block">
+                Live Service URL
+              </span>
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-xs text-emerald-400 truncate">{project.liveUrl}</span>
+                <span className="font-mono text-xs text-[var(--black)] truncate">{project.liveUrl}</span>
                 <a
                   href={project.liveUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-xs flex items-center gap-1 border border-slate-800"
+                  aria-label="Open live service URL in new tab"
+                  className="p-1.5 bg-[var(--white)] hover:bg-[var(--black)] hover:text-[var(--white)] text-[var(--black)] border border-[var(--black)] transition-colors shrink-0"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
             </div>
 
-            {/* Container Specs */}
-            <div className="grid grid-cols-3 gap-2.5 text-xs">
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-slate-500 text-[10px] block mb-0.5">Region</span>
-                <span className="font-semibold text-slate-200 truncate block">asia-se1</span>
+            <div className="grid grid-cols-3 border border-[var(--rule)] bg-[var(--white)] font-mono text-xs tabular-nums">
+              <div className="p-3 border-r border-[var(--rule)]">
+                <span className="text-[var(--text-muted)] text-[10px] uppercase block mb-0.5">Region</span>
+                <span className="font-bold text-[var(--black)]">asia-se1</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-slate-500 text-[10px] block mb-0.5">Memory</span>
-                <span className="font-semibold text-slate-200">{project.memory}</span>
+              <div className="p-3 border-r border-[var(--rule)]">
+                <span className="text-[var(--text-muted)] text-[10px] uppercase block mb-0.5">Memory</span>
+                <span className="font-bold text-[var(--black)]">{project.memory}</span>
               </div>
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <span className="text-slate-500 text-[10px] block mb-0.5">Compute</span>
-                <span className="font-semibold text-slate-200">{project.cpu}</span>
+              <div className="p-3">
+                <span className="text-[var(--text-muted)] text-[10px] uppercase block mb-0.5">Compute</span>
+                <span className="font-bold text-[var(--black)]">{project.cpu}</span>
               </div>
             </div>
 
-            {/* Environment Variables Table */}
-            <div className="space-y-2 pt-2">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Injected Container Variables</div>
-              <div className="space-y-1">
+            <div className="space-y-2">
+              <div className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)]">
+                Injected Container Variables
+              </div>
+              <div className="border border-[var(--rule)] divide-y divide-[var(--rule)] font-mono text-xs">
                 {project.environmentVariables.map((env, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between p-2 rounded-lg bg-slate-950 font-mono text-[11px] border border-slate-800/80"
+                    className="flex items-center justify-between px-3 py-2 bg-[var(--gray)]"
                   >
-                    <span className="text-slate-400">{env.key}</span>
-                    <span className="text-emerald-300">{env.value}</span>
+                    <span className="text-[var(--text-muted)]">{env.key}</span>
+                    <span className="text-[var(--black)] font-semibold">{env.value}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Right Column: Live Terminal Stream (6 cols) */}
-        <div className="lg:col-span-6 space-y-5">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-3 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          {/* Right Column (6 cols): Live Build Stream */}
+          <div className="lg:col-span-6 bg-[var(--white)] border border-[var(--black)] p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--rule)]">
               <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                <Terminal className="w-4 h-4 text-[var(--red)]" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--black)]">
                   Live Container Build Logs
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-slate-500">STDOUT / STDERR</span>
+              <span className="text-[10px] font-mono text-[var(--text-muted)]">STDOUT / STDERR</span>
             </div>
 
-            {/* Terminal Window */}
-            <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 font-mono text-xs text-slate-300 h-[380px] overflow-y-auto space-y-2 leading-relaxed">
-              <div className="text-slate-500">=== Vibe Coding Container Pipeline Initialized ===</div>
+            <div className="p-4 bg-[#000000] text-[#FFFFFF] border border-[var(--black)] font-mono text-xs h-[380px] overflow-y-auto space-y-2 leading-relaxed tabular-nums">
+              <div className="text-[#9CA3AF]">=== Vibe Coding Container Pipeline Initialized ===</div>
               {logs.map((log) => (
                 <div key={log.id} className="flex items-start gap-2">
-                  <span className="text-slate-500 text-[10px] shrink-0">[{log.timestamp}]</span>
+                  <span className="text-[#9CA3AF] text-[10px] shrink-0">[{log.timestamp}]</span>
                   <span
-                    className={`font-semibold shrink-0 text-[11px] ${
-                      log.type === 'success' ? 'text-emerald-400' : 'text-cyan-400'
+                    className={`font-bold shrink-0 text-[11px] ${
+                      log.type === 'success' ? 'text-[#EF4444]' : 'text-[#FFFFFF]'
                     }`}
                   >
                     [{log.stage}]
                   </span>
-                  <span className={log.type === 'success' ? 'text-emerald-300' : 'text-slate-300'}>
-                    {log.message}
-                  </span>
+                  <span className="text-[#F5F5F5]">{log.message}</span>
                 </div>
               ))}
               {isDeploying && (
-                <div className="flex items-center gap-2 text-slate-400 animate-pulse">
-                  <span>→</span> <span>Compiling microservices and executing health checks...</span>
+                <div className="flex items-center gap-2 text-[#EF4444]">
+                  <span>&gt;</span>
+                  <span>Compiling microservices and executing health checks...</span>
                 </div>
               )}
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

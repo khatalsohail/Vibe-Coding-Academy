@@ -2,26 +2,21 @@ import React, { useState } from 'react';
 import {
   Sparkles,
   Play,
-  RotateCcw,
   Sliders,
   Layers,
-  ShieldCheck,
-  HardDrive,
   Copy,
   Check,
   FolderGit2,
   Rocket,
-  Maximize2,
   Smartphone,
   Monitor,
   AlertCircle,
   HelpCircle,
-  TrendingUp,
   History,
   Code2,
-  CheckCircle2,
+  X,
 } from 'lucide-react';
-import { GeneratedSystemSpec, PromptDiffRecord, ContextBlock } from '../types';
+import { GeneratedSystemSpec, PromptDiffRecord } from '../types';
 import { ArchitectureVisualizer } from './ArchitectureVisualizer';
 import { STARTER_PLAYGROUND_PROMPTS } from '../data/learningContent';
 import { generateAIEngineCode, analyzePromptDiff, scaffoldPromptGuardrails } from '../services/geminiService';
@@ -36,7 +31,6 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   onDeployRequest,
   onDriveSyncSuccess,
 }) => {
-  // Playground state
   const [prompt, setPrompt] = useState<string>(
     'Build a real-time collaborative task manager with Google OAuth login, Firestore database persistence, and Google Drive vibe-coding-site sync.'
   );
@@ -51,17 +45,14 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
-  // Generated Spec Data
   const [spec, setSpec] = useState<GeneratedSystemSpec | null>(null);
   const [promptHistory, setPromptHistory] = useState<PromptDiffRecord[]>([]);
 
-  // Guided Guardrails Modal
   const [showGuardrailsModal, setShowGuardrailsModal] = useState<boolean>(false);
   const [guardrailQuestions, setGuardrailQuestions] = useState<any[]>([]);
   const [suggestedPrompt, setSuggestedPrompt] = useState<string>('');
   const [isScaffolding, setIsScaffolding] = useState<boolean>(false);
 
-  // Run initial generation on mount if empty
   React.useEffect(() => {
     handleGenerate();
   }, []);
@@ -79,7 +70,6 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
 
       setSpec(generatedSpec);
 
-      // Record prompt diff if previous exists
       if (promptHistory.length > 0) {
         const lastRecord = promptHistory[0];
         try {
@@ -94,7 +84,7 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
             architecturalAdditions: diffAnalysis.architecturalEvolution || [],
           };
           setPromptHistory((prev) => [newRecord, ...prev.slice(0, 9)]);
-        } catch (e) {
+        } catch {
           // ignore diff err
         }
       } else {
@@ -110,7 +100,7 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
           },
         ]);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Generation error:', err);
     } finally {
       setIsLoading(false);
@@ -156,90 +146,89 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   };
 
   return (
-    <div id="playground-workspace" className="space-y-6 animate-in fade-in duration-300">
-      {/* Workspace Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-            <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-bold">INTERACTIVE SIMULATOR</span>
-          </div>
-          <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight font-mono mt-0.5">
-            Intent-to-Architecture Split-Pane
-          </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+    <div id="playground-workspace" className="w-full">
+      {/* Header Band */}
+      <section className="swiss-grid swiss-grid--flush-top items-end">
+        <div className="main space-y-2">
+          <div className="eyebrow font-mono">Interactive Simulator</div>
+          <h1>Intent-to-Architecture Split-Pane</h1>
+          <p className="lead max-w-2xl">
             Test how natural language prompt phrasing transforms system topology, components, and runtime code.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="aside flex flex-wrap sm:flex-nowrap items-center justify-start md:justify-end gap-2.5">
           <button
             id="playground-save-drive-btn"
+            type="button"
             onClick={handleSaveToDrive}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 border transition font-mono ${
-              saveSuccess
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-800'
-                : 'bg-slate-950 hover:bg-slate-800 text-cyan-400 border-slate-800'
-            }`}
+            className="button button--outline"
           >
-            {saveSuccess ? <CheckCircle2 className="w-4 h-4 text-cyan-400" /> : <FolderGit2 className="w-4 h-4 text-cyan-400" />}
-            <span>{saveSuccess ? 'Saved to vibe-coding-site' : 'Save to Google Drive'}</span>
+            {saveSuccess ? <Check className="w-4 h-4 text-[var(--red)]" /> : <FolderGit2 className="w-4 h-4" />}
+            <span>{saveSuccess ? 'Saved to Drive' : 'Save to Drive'}</span>
           </button>
 
           {spec && (
             <button
               id="playground-deploy-btn"
+              type="button"
               onClick={() => onDeployRequest?.(spec)}
-              className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-md shadow-cyan-500/20 font-mono"
+              className="button"
             >
-              <Rocket className="w-4 h-4 fill-slate-950" />
+              <Rocket className="w-4 h-4" />
               <span>1-Click Deploy</span>
             </button>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Split Pane Main Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT PANE (5 cols): Intent Input & Interactive Sliders */}
-        <div className="lg:col-span-5 space-y-5">
-          {/* Prompt Editor Box */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between">
+      {/* Split-Pane Simulator Section */}
+      <section className="swiss-grid">
+        <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT PANE (5 cols): Intent Editor & Sliders */}
+          <div className="lg:col-span-5 bg-[var(--gray)] border border-[var(--black)] p-6 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--rule)]">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">Natural Language Intent</span>
+                <Sparkles className="w-4 h-4 text-[var(--red)]" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--black)]">
+                  Natural Language Intent
+                </span>
               </div>
               <button
+                type="button"
                 onClick={handleOpenGuardrails}
-                className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                className="text-xs font-mono font-semibold text-[var(--red)] hover:underline flex items-center gap-1"
               >
                 <HelpCircle className="w-3.5 h-3.5" />
-                Guided Guardrails
+                <span>Guided Guardrails</span>
               </button>
             </div>
 
             <textarea
               id="playground-prompt-input"
+              aria-label="Natural language architectural prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
               placeholder="Describe your desired software in natural language..."
-              className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-2xl p-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition leading-relaxed resize-none font-sans"
+              className="w-full bg-[var(--white)] border border-[var(--black)] p-3.5 text-sm text-[var(--black)] placeholder:text-[var(--text-muted)] leading-relaxed resize-none"
             />
 
-            {/* Quick Preset Prompts */}
-            <div className="space-y-1.5">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Quick Starter Blueprints</div>
+            {/* Starter Blueprints */}
+            <div className="space-y-2">
+              <div className="text-[10px] font-mono uppercase font-semibold text-[var(--text-muted)]">
+                Starter Blueprints
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {STARTER_PLAYGROUND_PROMPTS.map((p, idx) => (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() => {
                       setPrompt(p.prompt);
                       setTechStack(p.stack);
                     }}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition truncate max-w-full text-left"
+                    className="text-[11px] px-2.5 py-1 bg-[var(--white)] hover:bg-[var(--black)] hover:text-[var(--white)] text-[var(--black)] border border-[var(--rule)] hover:border-[var(--black)] transition-colors text-left"
                   >
                     {p.title}
                   </button>
@@ -247,370 +236,394 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
               </div>
             </div>
 
-            {/* Interactive Vibe Coding Precision Sliders */}
-            <div className="pt-3 border-t border-slate-800 space-y-4">
+            {/* Precision Sliders */}
+            <div className="pt-4 border-t border-[var(--rule)] space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">Interactive Precision Sliders</span>
+                  <Sliders className="w-4 h-4 text-[var(--black)]" />
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--black)]">
+                    Precision Sliders
+                  </span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400">Simulate Intent Rigor</span>
+                <span className="text-[10px] font-mono text-[var(--text-muted)]">Intent Rigor</span>
               </div>
 
-              {/* Slider 1: Prompt Precision */}
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-300 font-medium">Prompt Precision & Clarity</span>
-                  <span className="font-mono text-emerald-400 font-bold">{precisionLevel}%</span>
+                <div className="flex justify-between text-xs tabular-nums">
+                  <label htmlFor="slider-precision" className="font-medium text-[var(--black)]">
+                    Prompt Precision &amp; Clarity
+                  </label>
+                  <span className="font-mono font-bold text-[var(--red)]">{precisionLevel}%</span>
                 </div>
                 <input
+                  id="slider-precision"
                   type="range"
                   min="10"
                   max="100"
                   value={precisionLevel}
                   onChange={(e) => setPrecisionLevel(Number(e.target.value))}
-                  className="w-full accent-emerald-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  className="w-full accent-[#DC2626] cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>Vague / "Make a game"</span>
-                  <span>Architect-Grade Spec</span>
+                <div className="flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
+                  <span>Vague</span>
+                  <span>Architect-Grade</span>
                 </div>
               </div>
 
-              {/* Slider 2: Architectural Depth */}
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-300 font-medium">Architectural Scoping</span>
-                  <span className="font-mono text-cyan-400 font-bold">{architectureDepth}%</span>
+                <div className="flex justify-between text-xs tabular-nums">
+                  <label htmlFor="slider-depth" className="font-medium text-[var(--black)]">
+                    Architectural Scoping
+                  </label>
+                  <span className="font-mono font-bold text-[var(--black)]">{architectureDepth}%</span>
                 </div>
                 <input
+                  id="slider-depth"
                   type="range"
                   min="10"
                   max="100"
                   value={architectureDepth}
                   onChange={(e) => setArchitectureDepth(Number(e.target.value))}
-                  className="w-full accent-cyan-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  className="w-full accent-black cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>In-Memory Scratchpad</span>
-                  <span>Full-Stack Microservices</span>
+                <div className="flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
+                  <span>In-Memory</span>
+                  <span>Full-Stack</span>
                 </div>
               </div>
 
-              {/* Slider 3: Security Guardrails */}
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-300 font-medium">Security Guardrails & Zero-Trust</span>
-                  <span className="font-mono text-amber-400 font-bold">{securityLevel}%</span>
+                <div className="flex justify-between text-xs tabular-nums">
+                  <label htmlFor="slider-security" className="font-medium text-[var(--black)]">
+                    Security Guardrails &amp; Zero-Trust
+                  </label>
+                  <span className="font-mono font-bold text-[var(--black)]">{securityLevel}%</span>
                 </div>
                 <input
+                  id="slider-security"
                   type="range"
                   min="10"
                   max="100"
                   value={securityLevel}
                   onChange={(e) => setSecurityLevel(Number(e.target.value))}
-                  className="w-full accent-amber-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                  className="w-full accent-black cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>Implicit / Unchecked</span>
-                  <span>Zero-Trust + Server Proxies</span>
+                <div className="flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
+                  <span>Unchecked</span>
+                  <span>Zero-Trust Proxies</span>
                 </div>
               </div>
             </div>
 
-            {/* Generate Action Button */}
             <button
               id="playground-generate-btn"
+              type="button"
               onClick={handleGenerate}
               disabled={isLoading}
-              className="w-full py-3.5 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-800 text-slate-950 font-bold text-xs font-mono rounded-2xl transition shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2"
+              className="button w-full"
             >
               {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></div>
-                  <span>Deconstructing Architecture...</span>
-                </>
+                <span>Deconstructing Architecture...</span>
               ) : (
                 <>
-                  <Play className="w-4 h-4 fill-slate-950" />
-                  <span>GENERATE SYSTEM SPEC & CODE</span>
+                  <Play className="w-4 h-4" />
+                  <span>Generate System Spec &amp; Code</span>
                 </>
               )}
             </button>
           </div>
-        </div>
 
-        {/* RIGHT PANE (7 cols): Live Sandbox & System Architecture Tabs */}
-        <div className="lg:col-span-7 space-y-4">
-          {/* Tabs Bar */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-1.5 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1 font-mono">
-              <button
-                id="tab-preview"
-                onClick={() => setActiveTab('preview')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                  activeTab === 'preview' ? 'bg-slate-800 text-cyan-400 shadow' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Live App Preview
-              </button>
-
-              <button
-                id="tab-architecture"
-                onClick={() => setActiveTab('architecture')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
-                  activeTab === 'architecture' ? 'bg-slate-800 text-cyan-400 shadow' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                Architecture Graph
-              </button>
-
-              <button
-                id="tab-code"
-                onClick={() => setActiveTab('code')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
-                  activeTab === 'code' ? 'bg-slate-800 text-cyan-400 shadow' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Code2 className="w-3.5 h-3.5" />
-                Component Tree & Code
-              </button>
-
-              <button
-                id="tab-diff"
-                onClick={() => setActiveTab('diff')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
-                  activeTab === 'diff' ? 'bg-slate-800 text-cyan-400 shadow' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <History className="w-3.5 h-3.5" />
-                Prompt Diff
-              </button>
+          {/* RIGHT PANE (7 cols): Live Sandbox & Architecture Output */}
+          <div className="lg:col-span-7 space-y-5">
+            {/* Tabs Bar */}
+            <div className="border border-[var(--black)] bg-[var(--white)] p-1.5 flex items-center justify-between gap-2 overflow-x-auto">
+              <div className="flex items-center gap-1 font-mono shrink-0">
+                {[
+                  { id: 'preview' as const, label: 'Live Preview', icon: null },
+                  { id: 'architecture' as const, label: 'Architecture Graph', icon: <Layers className="w-3.5 h-3.5" /> },
+                  { id: 'code' as const, label: 'Component Code', icon: <Code2 className="w-3.5 h-3.5" /> },
+                  { id: 'diff' as const, label: 'Prompt Diff', icon: <History className="w-3.5 h-3.5" /> },
+                ].map((tab) => {
+                  const active = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      id={`tab-${tab.id}`}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-3 py-1.5 text-xs font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                        active
+                          ? 'bg-[var(--black)] text-[var(--white)]'
+                          : 'text-[var(--text-muted)] hover:text-[var(--black)] hover:bg-[var(--gray)]'
+                      }`}
+                    >
+                      {tab.icon}
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Viewport switcher for preview tab */}
+            {/* TAB 1: Live App Preview */}
             {activeTab === 'preview' && (
-              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-                <button
-                  onClick={() => setViewportMode('desktop')}
-                  className={`p-1 rounded-lg ${viewportMode === 'desktop' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
-                  title="Desktop View"
-                >
-                  <Monitor className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewportMode('mobile')}
-                  className={`p-1 rounded-lg ${viewportMode === 'mobile' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}
-                  title="Mobile View"
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* TAB 1: Live Sandbox Preview */}
-          {activeTab === 'preview' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-800 text-slate-400">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  <span className="font-mono text-slate-300 font-semibold">{spec?.title || 'Interactive Sandbox'}</span>
+              <div className="border border-[var(--black)] bg-[var(--white)] p-5 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs pb-3 border-b border-[var(--rule)]">
+                  <span className="font-mono font-bold text-[var(--black)] truncate">
+                    {spec?.title || 'Interactive Sandbox'}
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-mono text-[11px] px-2 py-0.5 border border-[var(--black)] bg-[var(--gray)] text-[var(--black)] font-semibold">
+                      {spec?.intentQuality || 'Active'}
+                    </span>
+                    <div className="flex items-center gap-0.5 border border-[var(--rule)] bg-[var(--gray)] p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setViewportMode('desktop')}
+                        aria-label="Desktop preview viewport"
+                        aria-pressed={viewportMode === 'desktop'}
+                        className={`p-1 transition-colors ${
+                          viewportMode === 'desktop'
+                            ? 'bg-[var(--black)] text-[var(--white)]'
+                            : 'text-[var(--text-muted)] hover:text-[var(--black)]'
+                        }`}
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewportMode('mobile')}
+                        aria-label="Mobile preview viewport"
+                        aria-pressed={viewportMode === 'mobile'}
+                        className={`p-1 transition-colors ${
+                          viewportMode === 'mobile'
+                            ? 'bg-[var(--black)] text-[var(--white)]'
+                            : 'text-[var(--text-muted)] hover:text-[var(--black)]'
+                        }`}
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-950 text-emerald-400 border border-emerald-900/50">
-                  {spec?.intentQuality || 'Active'}
-                </span>
-              </div>
 
-              {/* Sandboxed IFrame */}
-              <div
-                className={`mx-auto bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden transition-all duration-300 ${
-                  viewportMode === 'mobile' ? 'max-w-sm h-[520px] shadow-2xl' : 'w-full h-[520px]'
-                }`}
-              >
-                {spec?.htmlPreview ? (
-                  <iframe
-                    title="Live Vibe Preview"
-                    srcDoc={spec.htmlPreview}
-                    className="w-full h-full border-0 bg-slate-950"
-                    sandbox="allow-scripts allow-same-origin allow-forms"
-                  />
-                ) : (
-                  <div className="h-full flex items-center justify-center text-slate-500 text-xs font-mono">
-                    Awaiting generation...
+                <div
+                  className={`mx-auto bg-[#000000] border border-[var(--black)] overflow-hidden ${
+                    viewportMode === 'mobile' ? 'max-w-sm h-[520px]' : 'w-full h-[520px]'
+                  }`}
+                >
+                  {spec?.htmlPreview ? (
+                    <iframe
+                      title="Live Vibe Preview"
+                      srcDoc={spec.htmlPreview}
+                      className="w-full h-full border-0 bg-[#0A0A0A]"
+                      sandbox="allow-scripts allow-same-origin allow-forms"
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-white text-xs font-mono">
+                      Awaiting generation...
+                    </div>
+                  )}
+                </div>
+
+                {spec?.guardrailInsights && spec.guardrailInsights.length > 0 && (
+                  <div className="p-3.5 bg-[var(--gray)] border border-[var(--rule)] space-y-1">
+                    <div className="text-[10px] font-mono uppercase font-bold text-[var(--red)] flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>Architectural Observation</span>
+                    </div>
+                    <p className="text-xs text-[var(--black)]">{spec.guardrailInsights[0]}</p>
                   </div>
                 )}
               </div>
+            )}
 
-              {/* Guardrails Insight Pill */}
-              {spec?.guardrailInsights && spec.guardrailInsights.length > 0 && (
-                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800/80 space-y-1">
-                  <div className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1.5">
-                    <AlertCircle className="w-3 h-3" />
-                    Architectural Observation
-                  </div>
-                  <p className="text-xs text-slate-300">{spec.guardrailInsights[0]}</p>
+            {/* TAB 2: Architecture Graph */}
+            {activeTab === 'architecture' && spec && (
+              <ArchitectureVisualizer
+                spec={spec}
+                nodes={spec.architectureNodes || []}
+                links={spec.architectureLinks || []}
+                intentScore={spec.score || 80}
+              />
+            )}
+
+            {/* TAB 3: Component Tree & Code */}
+            {activeTab === 'code' && spec && (
+              <div className="border border-[var(--black)] bg-[var(--white)] p-5 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[var(--rule)]">
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--black)]">
+                    Component Tree Hierarchy
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyCode}
+                    className="button button--outline !py-1.5 !px-3 !text-xs"
+                  >
+                    {copiedCode ? <Check className="w-3.5 h-3.5 text-[var(--red)]" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* TAB 2: Intent-to-Architecture Graph */}
-          {activeTab === 'architecture' && spec && (
-            <ArchitectureVisualizer
-              spec={spec}
-              nodes={spec.architectureNodes || []}
-              links={spec.architectureLinks || []}
-              intentScore={spec.score || 80}
-            />
-          )}
-
-          {/* TAB 3: Code & Component Hierarchy */}
-          {activeTab === 'code' && spec && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                  Component Tree Hierarchy
-                </div>
-                <button
-                  onClick={handleCopyCode}
-                  className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs font-mono flex items-center gap-1.5 transition"
-                >
-                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
-                </button>
-              </div>
-
-              {/* Component Nodes */}
-              <div className="grid grid-cols-2 gap-2.5">
-                {spec.componentTree?.map((comp, idx) => (
-                  <div key={idx} className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-emerald-300">{`<${comp.name} />`}</span>
-                      <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
-                        {comp.type}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">{comp.description}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Code Snippet */}
-              <div className="space-y-2">
-                <div className="text-[10px] uppercase font-bold text-slate-400">Production TypeScript Architecture</div>
-                <pre className="p-4 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-mono text-slate-300 overflow-x-auto max-h-72 leading-relaxed">
-                  <code>{spec.codeSnippet}</code>
-                </pre>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: Prompt Diffing History */}
-          {activeTab === 'diff' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-emerald-400" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                    Prompt-Diffing & Evolution Log
-                  </h3>
-                </div>
-                <span className="text-xs text-slate-400 font-mono">Git for Natural Language Intent</span>
-              </div>
-
-              <div className="space-y-3">
-                {promptHistory.map((item) => (
-                  <div key={item.id} className="bg-slate-950 rounded-2xl p-4 border border-slate-800 space-y-3 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-slate-500 text-[11px]">{item.timestamp}</span>
-                      <span className="px-2 py-0.5 rounded font-mono text-emerald-300 bg-emerald-950 border border-emerald-800 text-[10px]">
-                        +{item.scoreDiff}% Precision Lift
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800/80">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Intent Prompt</span>
-                        <p className="text-slate-300 text-xs font-mono leading-relaxed line-clamp-3">
-                          "{item.refinedPrompt}"
-                        </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {spec.componentTree?.map((comp, idx) => (
+                    <div key={idx} className="p-3.5 bg-[var(--gray)] border border-[var(--rule)] text-xs space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono font-bold text-[var(--black)]">{`<${comp.name} />`}</span>
+                        <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 bg-[var(--white)] text-[var(--text-muted)] border border-[var(--rule)]">
+                          {comp.type}
+                        </span>
                       </div>
-                      <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800/80">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Architectural Upgrades</span>
-                        <ul className="text-slate-300 text-[11px] space-y-1">
-                          {item.architecturalAdditions.map((add, idx) => (
-                            <li key={idx} className="flex items-center gap-1.5 text-emerald-300">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                              {add}
-                            </li>
-                          ))}
-                        </ul>
+                      <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">{comp.description}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)]">
+                    Production TypeScript Architecture
+                  </div>
+                  <pre className="p-4 bg-[#000000] text-[#FFFFFF] border border-[var(--black)] text-xs font-mono overflow-x-auto max-h-72 leading-relaxed">
+                    <code>{spec.codeSnippet}</code>
+                  </pre>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: Prompt Diffing History */}
+            {activeTab === 'diff' && (
+              <div className="border border-[var(--black)] bg-[var(--white)] p-5 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[var(--rule)]">
+                  <div className="flex items-center gap-2">
+                    <History className="w-4 h-4 text-[var(--black)]" />
+                    <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--black)]">
+                      Prompt-Diffing &amp; Evolution Log
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                    Intent Version History
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {promptHistory.map((item) => (
+                    <div key={item.id} className="bg-[var(--gray)] p-4 border border-[var(--rule)] space-y-3 text-xs">
+                      <div className="flex items-center justify-between font-mono tabular-nums">
+                        <span className="text-[var(--text-muted)] text-[11px]">{item.timestamp}</span>
+                        <span className="px-2 py-0.5 bg-[var(--white)] border border-[var(--black)] text-[var(--red)] font-bold text-[10px]">
+                          +{item.scoreDiff}% Precision Lift
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="p-3 bg-[var(--white)] border border-[var(--rule)]">
+                          <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] block mb-1">
+                            Intent Prompt
+                          </span>
+                          <p className="text-[var(--black)] text-xs font-mono leading-relaxed line-clamp-3">
+                            &ldquo;{item.refinedPrompt}&rdquo;
+                          </p>
+                        </div>
+                        <div className="p-3 bg-[var(--white)] border border-[var(--rule)]">
+                          <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] block mb-1">
+                            Architectural Upgrades
+                          </span>
+                          <ul className="text-[var(--black)] text-[11px] space-y-1">
+                            {item.architecturalAdditions.map((add, idx) => (
+                              <li key={idx} className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-[var(--red)] inline-block shrink-0"></span>
+                                <span>{add}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Guided Guardrails Modal */}
       {showGuardrailsModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-xl w-full space-y-5 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="guardrails-modal-title"
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setShowGuardrailsModal(false)}
+        >
+          <div
+            className="bg-[var(--white)] border border-[var(--black)] p-6 max-w-xl w-full space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--rule)]">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-base font-bold text-white">Guided Guardrails Assistant</h3>
+                <Sparkles className="w-4 h-4 text-[var(--red)]" />
+                <h3 id="guardrails-modal-title" className="text-base font-bold text-[var(--black)]">
+                  Guided Guardrails Assistant
+                </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setShowGuardrailsModal(false)}
-                className="text-slate-400 hover:text-white text-sm"
+                aria-label="Close guardrails assistant"
+                className="p-1.5 border border-[var(--rule)] text-[var(--black)] hover:bg-[var(--red)] hover:text-white hover:border-[var(--red)] transition-colors"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
               Transform vague ideas into production development specifications by pinning these architectural decisions:
             </p>
 
-            <div className="space-y-3">
-              {guardrailQuestions.map((q, idx) => (
-                <div key={idx} className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs space-y-2">
-                  <div className="font-semibold text-slate-200">{q.question}</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {q.options.map((opt: string, optIdx: number) => (
-                      <button
-                        key={optIdx}
-                        onClick={() => {
-                          setPrompt((prev) => `${prev} (${q.dimension}: ${opt})`);
-                        }}
-                        className="text-[11px] px-2 py-1 bg-slate-900 hover:bg-emerald-950 hover:text-emerald-300 border border-slate-800 hover:border-emerald-800 rounded-lg text-slate-300 transition"
-                      >
-                        + {opt}
-                      </button>
-                    ))}
+            {isScaffolding ? (
+              <div className="p-6 text-center text-xs font-mono text-[var(--text-muted)]">
+                Analyzing prompt constraints...
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {guardrailQuestions.map((q, idx) => (
+                  <div key={idx} className="p-3.5 bg-[var(--gray)] border border-[var(--rule)] text-xs space-y-2">
+                    <div className="font-semibold text-[var(--black)]">{q.question}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {q.options.map((opt: string, optIdx: number) => (
+                        <button
+                          key={optIdx}
+                          type="button"
+                          onClick={() => {
+                            setPrompt((prev) => `${prev} (${q.dimension}: ${opt})`);
+                          }}
+                          className="text-[11px] px-2.5 py-1 bg-[var(--white)] hover:bg-[var(--black)] hover:text-[var(--white)] border border-[var(--black)] text-[var(--black)] transition-colors"
+                        >
+                          + {opt}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {suggestedPrompt && (
-              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                <span className="text-[10px] uppercase font-bold text-emerald-400 block">Recommended Scoped Prompt</span>
-                <p className="text-xs text-slate-300 font-mono leading-relaxed whitespace-pre-line">{suggestedPrompt}</p>
+              <div className="p-4 bg-[var(--gray)] border border-[var(--black)] space-y-3">
+                <span className="eyebrow font-mono block">Recommended Scoped Prompt</span>
+                <p className="text-xs text-[var(--black)] font-mono leading-relaxed whitespace-pre-line">
+                  {suggestedPrompt}
+                </p>
                 <button
+                  type="button"
                   onClick={() => {
                     setPrompt(suggestedPrompt);
                     setShowGuardrailsModal(false);
                   }}
-                  className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition"
+                  className="button w-full"
                 >
-                  Apply Scoped Prompt & Close
+                  Apply Scoped Prompt &amp; Close
                 </button>
               </div>
             )}

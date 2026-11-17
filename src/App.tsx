@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
 import { PlaygroundView } from './components/PlaygroundView';
@@ -11,12 +11,13 @@ import { AITutorModal } from './components/AITutorModal';
 import { AuthModal } from './components/AuthModal';
 import { AccountProfileModal } from './components/AccountProfileModal';
 import { AuthReviewTestingModal } from './components/AuthReviewTestingModal';
-import { LearningTrack, TelemetryMetrics, UserProgress, GeneratedSystemSpec, DriveSyncedFile, DailyTask, AchievementBadge, UserAccount, AuthSession } from './types';
+import { LearningTrack, TelemetryMetrics, UserProgress, GeneratedSystemSpec, DriveSyncedFile, AchievementBadge, UserAccount, AuthSession } from './types';
 import { DriveService, DriveAuthStatus } from './services/driveService';
 import { authService } from './services/authService';
-import { INITIAL_DAILY_TASKS, LEARNING_TRACKS } from './data/learningContent';
+import { INITIAL_DAILY_TASKS } from './data/learningContent';
 import { INITIAL_ACHIEVEMENT_BADGES } from './data/achievementBadges';
 import { fireMilestoneConfetti, fireTaskConfetti } from './utils/confetti';
+import { calculateLevelFromXP } from './utils/architectureMetrics';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<'dashboard' | 'playground' | 'context' | 'review' | 'deploy'>('dashboard');
@@ -137,7 +138,7 @@ export default function App() {
   const handleAddXP = (amount: number) => {
     setUserProgress((prev) => {
       const newXP = prev.xp + amount;
-      const newLevel = Math.floor(newXP / 300) + 1;
+      const newLevel = calculateLevelFromXP(newXP);
       const newCount = prev.challengesCompleted + 1;
       authService.updateLocalUserStats({ xp: newXP, level: newLevel, challengesResolved: newCount });
       return {
@@ -190,7 +191,7 @@ export default function App() {
     if (rewardedXP > 0) {
       setUserProgress((prev) => {
         const newXP = prev.xp + rewardedXP;
-        const newLevel = Math.floor(newXP / 300) + 1;
+        const newLevel = calculateLevelFromXP(newXP);
         const unlockedIds = prev.unlockedBadgeIds || [];
         authService.updateLocalUserStats({ xp: newXP, level: newLevel });
         return {
@@ -226,7 +227,7 @@ export default function App() {
       });
 
       const newXP = nowCompleted ? prev.xp + points : Math.max(0, prev.xp - points);
-      const newLevel = Math.floor(newXP / 300) + 1;
+      const newLevel = calculateLevelFromXP(newXP);
       authService.updateLocalUserStats({ xp: newXP, level: newLevel });
 
       return {
@@ -260,7 +261,7 @@ export default function App() {
 
       justCompleted = !alreadyCompleted;
       const newXP = justCompleted ? prev.xp + xpReward : Math.max(0, prev.xp - xpReward);
-      const newLevel = Math.floor(newXP / 300) + 1;
+      const newLevel = calculateLevelFromXP(newXP);
       authService.updateLocalUserStats({ xp: newXP, level: newLevel });
 
       return {
@@ -287,7 +288,7 @@ export default function App() {
   const handleAwardXP = (amount: number) => {
     setUserProgress((prev) => {
       const newXP = prev.xp + amount;
-      const newLevel = Math.floor(newXP / 300) + 1;
+      const newLevel = calculateLevelFromXP(newXP);
       authService.updateLocalUserStats({ xp: newXP, level: newLevel });
       return {
         ...prev,
@@ -311,92 +312,106 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-300 flex flex-col font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
-      {/* Top Navbar */}
-      <Navbar
-        currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
-        userProgress={userProgress}
-        driveStatus={driveStatus}
-        currentUser={currentUser}
-        onOpenDriveModal={() => setIsDriveModalOpen(true)}
-        onSelectTrack={handleSelectTrack}
-        onOpenAuthModal={handleOpenAuthModal}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
-        onLogout={handleLogout}
-        onOpenReviewTestModal={() => setIsReviewTestModalOpen(true)}
-      />
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen bg-[var(--white)] text-[var(--black)] flex flex-col antialiased selection:bg-[var(--red)] selection:text-white">
+        {/* Top Navbar */}
+        <Navbar
+          currentTab={currentTab}
+          setCurrentTab={setCurrentTab}
+          userProgress={userProgress}
+          driveStatus={driveStatus}
+          currentUser={currentUser}
+          onOpenDriveModal={() => setIsDriveModalOpen(true)}
+          onSelectTrack={handleSelectTrack}
+          onOpenAuthModal={handleOpenAuthModal}
+          onOpenProfileModal={() => setIsProfileModalOpen(true)}
+          onLogout={handleLogout}
+          onOpenReviewTestModal={() => setIsReviewTestModalOpen(true)}
+        />
 
-      {/* Main Page Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentTab}
-            initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -8, filter: 'blur(2px)' }}
-            transition={{
-              duration: 0.22,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="w-full"
-          >
-            {currentTab === 'dashboard' && (
-              <DashboardView
-                userProgress={userProgress}
-                telemetry={telemetry}
-                driveStatus={driveStatus}
-                driveFiles={driveFiles}
-                badges={badges}
-                onSelectTrack={handleSelectTrack}
-                onNavigate={(tab) => setCurrentTab(tab)}
-                onOpenDriveModal={() => setIsDriveModalOpen(true)}
-                onCompleteTask={handleCompleteTask}
-                onCompleteModule={handleCompleteModule}
-                onUnlockBadge={handleUnlockBadge}
-                onAwardXP={handleAwardXP}
-              />
-            )}
+        {/* Main Page Content */}
+        <main className="flex-1 w-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentTab}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.14 }}
+              className="w-full"
+            >
+              {currentTab === 'dashboard' && (
+                <DashboardView
+                  userProgress={userProgress}
+                  telemetry={telemetry}
+                  driveStatus={driveStatus}
+                  driveFiles={driveFiles}
+                  badges={badges}
+                  onSelectTrack={handleSelectTrack}
+                  onNavigate={(tab) => setCurrentTab(tab)}
+                  onOpenDriveModal={() => setIsDriveModalOpen(true)}
+                  onCompleteTask={handleCompleteTask}
+                  onCompleteModule={handleCompleteModule}
+                  onUnlockBadge={handleUnlockBadge}
+                  onAwardXP={handleAwardXP}
+                />
+              )}
 
-            {currentTab === 'playground' && (
-              <PlaygroundView
-                onDeployRequest={handleDeployRequest}
-                onDriveSyncSuccess={handleRefreshDriveFiles}
-              />
-            )}
+              {currentTab === 'playground' && (
+                <PlaygroundView
+                  onDeployRequest={handleDeployRequest}
+                  onDriveSyncSuccess={handleRefreshDriveFiles}
+                />
+              )}
 
-            {currentTab === 'context' && (
-              <ContextBuilderView onSendToPlayground={handleSendToPlayground} />
-            )}
+              {currentTab === 'context' && (
+                <ContextBuilderView onSendToPlayground={handleSendToPlayground} />
+              )}
 
-            {currentTab === 'review' && (
-              <ReviewArenaView onAddXP={handleAddXP} />
-            )}
+              {currentTab === 'review' && (
+                <ReviewArenaView onAddXP={handleAddXP} />
+              )}
 
-            {currentTab === 'deploy' && (
-              <DeploySandboxView
-                currentSpec={activeSpec}
-                onDriveSyncSuccess={handleRefreshDriveFiles}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+              {currentTab === 'deploy' && (
+                <DeploySandboxView
+                  currentSpec={activeSpec}
+                  onDriveSyncSuccess={handleRefreshDriveFiles}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-6 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Vibe Coding Academy • Powered by Intent & System Design</span>
+        {/* Swiss Hairline Footer */}
+        <footer className="border-t border-[var(--rule)] bg-[var(--white)] pt-8 pb-14 text-xs text-[var(--text-muted)]">
+          <div className="max-w-[72rem] mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="inline-block w-2 h-2 bg-[var(--red)]" aria-hidden="true"></span>
+              <span className="font-medium text-[var(--black)]">
+                VIBE_CODE.edu — Intent-Driven Architecture Platform
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-1 font-mono text-[11px] text-[var(--text-muted)]">
+              <span>Persistent User Records</span>
+              <span>Session Auth</span>
+              <span>Gemini 2.5 SDK</span>
+              <button
+                type="button"
+                onClick={() => setIsReviewTestModalOpen(true)}
+                className="underline hover:text-[var(--red)] transition-colors"
+              >
+                Auth Testbench
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsDriveModalOpen(true)}
+                className="underline hover:text-[var(--red)] transition-colors"
+              >
+                Drive Sync
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-4 font-mono text-[11px]">
-            <span>Database: Persistent NoSQL User Records</span>
-            <span>Session: Secure Local + Bearer Token</span>
-            <span>Gemini AI 2.5: Active</span>
-          </div>
-        </div>
-      </footer>
+        </footer>
 
       {/* Auth Modal (Sign Up & Log In) */}
       <AuthModal
@@ -451,6 +466,7 @@ export default function App() {
         track={userProgress.track}
         onNavigateTab={(tab) => setCurrentTab(tab)}
       />
-    </div>
+      </div>
+    </MotionConfig>
   );
 }

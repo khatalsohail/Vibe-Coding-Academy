@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
 import {
-  CheckCircle2,
+  Check,
   Trophy,
   Sparkles,
   ArrowRight,
   Target,
-  Flame,
-  Zap,
   Shield,
   Layers,
   Terminal,
   Server,
-  Award,
   ChevronRight,
-  Star,
+  Lock,
 } from 'lucide-react';
-import { DailyTask, LearningMilestone, LearningTrack } from '../types';
+import { DailyTask, LearningTrack } from '../types';
 import { LEARNING_TRACKS, LEARNING_MILESTONES } from '../data/learningContent';
-import { fireMilestoneConfetti, fireTaskConfetti } from '../utils/confetti';
+import { fireMilestoneConfetti } from '../utils/confetti';
+import { calculateTrackProgressPercent, summarizeDailyTasks } from '../utils/architectureMetrics';
 
 interface DailyMilestonesAndTasksProps {
   completedLessons: string[];
@@ -37,179 +35,163 @@ export const DailyMilestonesAndTasks: React.FC<DailyMilestonesAndTasksProps> = (
   onNavigate,
 }) => {
   const currentTrack = LEARNING_TRACKS[track];
-  const totalModulesInTrack = currentTrack.modules.length;
+  const trackModuleIds = currentTrack.modules.map((m) => m.id);
   const completedModulesCount = currentTrack.modules.filter((m) =>
     completedLessons.includes(m.id)
   ).length;
+  const trackProgressPercent = calculateTrackProgressPercent(completedLessons, trackModuleIds);
 
-  const trackProgressPercent = Math.round(
-    (completedModulesCount / Math.max(1, totalModulesInTrack)) * 100
-  );
+  const {
+    completedCount: completedTasksCount,
+    totalCount: totalTasksCount,
+    percent: dailyTasksPercent,
+    earnedPoints: earnedDailyPoints,
+    totalPoints: totalDailyPoints,
+  } = summarizeDailyTasks(dailyTasks);
 
-  // Daily Tasks stats
-  const completedTasksCount = dailyTasks.filter((t) => t.completed).length;
-  const totalTasksCount = dailyTasks.length;
-  const dailyTasksPercent = Math.round(
-    (completedTasksCount / Math.max(1, totalTasksCount)) * 100
-  );
-
-  // Total daily points available & earned
-  const earnedDailyPoints = dailyTasks
-    .filter((t) => t.completed)
-    .reduce((acc, t) => acc + t.points, 0);
-  const totalDailyPoints = dailyTasks.reduce((acc, t) => acc + t.points, 0);
-
-  // Milestone Celebration banner state
   const [celebratedMilestone, setCelebratedMilestone] = useState<string | null>(null);
 
-  // Handle milestone manual trigger celebration
   const handleTriggerMilestoneConfetti = (e: React.MouseEvent, title: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (rect.left + rect.width / 2) / window.innerWidth;
     const y = (rect.top + rect.height / 2) / window.innerHeight;
     fireMilestoneConfetti(x, y);
     setCelebratedMilestone(title);
-    setTimeout(() => setCelebratedMilestone(null), 4000);
+    setTimeout(() => setCelebratedMilestone(null), 3500);
   };
 
   const getCategoryIcon = (category: DailyTask['category']) => {
     switch (category) {
       case 'architecture':
-        return <Layers className="w-3.5 h-3.5 text-cyan-400" />;
+        return <Layers className="w-3.5 h-3.5 text-[var(--black)] shrink-0" />;
       case 'security':
-        return <Shield className="w-3.5 h-3.5 text-amber-400" />;
+        return <Shield className="w-3.5 h-3.5 text-[var(--red)] shrink-0" />;
       case 'prompting':
-        return <Terminal className="w-3.5 h-3.5 text-emerald-400" />;
+        return <Terminal className="w-3.5 h-3.5 text-[var(--black)] shrink-0" />;
       case 'deployment':
-        return <Server className="w-3.5 h-3.5 text-purple-400" />;
+        return <Server className="w-3.5 h-3.5 text-[var(--black)] shrink-0" />;
       default:
-        return <Target className="w-3.5 h-3.5 text-cyan-400" />;
+        return <Target className="w-3.5 h-3.5 text-[var(--black)] shrink-0" />;
     }
   };
 
   return (
-    <div id="daily-milestones-tasks-root" className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      {/* LEFT BENTO (7 cols): Architecture Learning Modules Progress & Milestones */}
+    <div id="daily-milestones-tasks-root" className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* LEFT (7 cols): Architecture Learning Modules & Milestones */}
       <div
         id="bento-architecture-milestones"
-        className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between space-y-5 relative overflow-hidden"
+        className="lg:col-span-7 flex flex-col justify-between space-y-6"
       >
-        {/* Decorative Top Accent Glow */}
-        <div className="absolute top-0 right-0 w-64 h-32 bg-cyan-500/10 blur-3xl pointer-events-none -mr-16 -mt-16 rounded-full"></div>
-
         <div>
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[var(--black)]">
             <div>
-              <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-cyan-400" />
-                <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-bold">
-                  ARCHITECTURE CURRICULUM & MILESTONES
-                </span>
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-white font-mono mt-0.5">
+              <div className="eyebrow font-mono">02 / Curriculum &amp; Milestones</div>
+              <h2 className="text-xl sm:text-2xl font-bold text-[var(--black)] mt-1">
                 {currentTrack.title}
-              </h3>
-              <p className="text-xs text-slate-400">{currentTrack.subtitle}</p>
+              </h2>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">{currentTrack.subtitle}</p>
             </div>
 
-            {/* Overall Track Progress Ring / Badge */}
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className="text-[10px] font-mono uppercase text-slate-400">Track Mastery</div>
-                <div className="text-sm font-bold font-mono text-cyan-400">
-                  {completedModulesCount}/{totalModulesInTrack} Modules ({trackProgressPercent}%)
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="text-right tabular-nums">
+                <div className="text-[10px] font-mono uppercase text-[var(--text-muted)]">
+                  Track Mastery
+                </div>
+                <div className="text-sm font-bold font-mono text-[var(--black)]">
+                  {completedModulesCount}/{currentTrack.modules.length} ({trackProgressPercent}%)
                 </div>
               </div>
               <button
                 id="confetti-milestone-btn"
+                type="button"
                 onClick={(e) =>
                   handleTriggerMilestoneConfetti(
                     e,
-                    `${completedModulesCount} Modules Completed!`
+                    `${completedModulesCount} Modules Completed`
                   )
                 }
-                title="Celebrate Progress with Confetti"
-                className="p-2.5 bg-slate-950 hover:bg-cyan-950 text-cyan-400 border border-cyan-800/80 rounded-2xl transition hover:scale-105 active:scale-95 shadow-md shadow-cyan-950 flex items-center justify-center gap-1.5 text-xs font-mono"
+                title="Celebrate Progress"
+                className="button button--outline !py-2 !px-3 !text-xs"
               >
-                <Sparkles className="w-4 h-4" />
-                <span className="hidden sm:inline">Celebrate</span>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Celebrate</span>
               </button>
             </div>
           </div>
 
-          {/* Master Progress Bar */}
-          <div className="my-4 space-y-1.5">
-            <div className="flex justify-between text-[11px] font-mono text-slate-400">
-              <span className="flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 text-orange-400" />
-                <span>Curriculum Completion</span>
-              </span>
-              <span className="font-bold text-white">{trackProgressPercent}%</span>
+          {celebratedMilestone && (
+            <div className="mt-3 p-2.5 bg-[var(--gray)] border border-[var(--red)] text-xs font-mono text-[var(--black)]">
+              Milestone verified: {celebratedMilestone}
             </div>
-            <div className="h-2.5 w-full bg-slate-950 rounded-full border border-slate-800 overflow-hidden p-0.5">
+          )}
+
+          {/* Progress Bar */}
+          <div className="my-4 space-y-1.5">
+            <div className="flex justify-between text-xs font-mono text-[var(--text-muted)] tabular-nums">
+              <span>Curriculum Completion</span>
+              <span className="font-bold text-[var(--black)]">{trackProgressPercent}%</span>
+            </div>
+            <div className="h-2 w-full bg-[var(--rule)]">
               <div
-                className="h-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-cyan-400 rounded-full transition-all duration-500 shadow-sm shadow-cyan-500/30"
+                className="h-full bg-[var(--black)] transition-all duration-300"
                 style={{ width: `${Math.max(4, trackProgressPercent)}%` }}
-              ></div>
+              />
             </div>
           </div>
 
-          {/* Individual Modules List with Interactive Completion */}
-          <div className="space-y-2.5 mt-4">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-bold">
-              Core Architecture Modules (Click to Finish & Earn XP)
+          {/* Modules Grid */}
+          <div className="space-y-2.5 mt-5">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] font-semibold">
+              Core Architecture Modules
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {currentTrack.modules.map((mod, idx) => {
                 const isCompleted = completedLessons.includes(mod.id);
                 return (
                   <div
                     key={mod.id}
                     id={`module-card-${mod.id}`}
-                    className={`rounded-2xl p-3 border transition-all relative flex flex-col justify-between ${
+                    className={`p-4 border flex flex-col justify-between transition-colors ${
                       isCompleted
-                        ? 'bg-slate-950/80 border-cyan-500/40 text-slate-300'
-                        : 'bg-slate-950/40 border-slate-800/90 hover:border-slate-700 text-slate-400'
+                        ? 'bg-[var(--gray)] border-[var(--black)]'
+                        : 'bg-[var(--white)] border-[var(--rule)] hover:border-[var(--black)]'
                     }`}
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-slate-900 text-cyan-400 border border-slate-800">
+                      <div className="flex items-center justify-between mb-2 font-mono text-[10px]">
+                        <span className="font-semibold text-[var(--text-muted)]">
                           0{idx + 1} • {mod.difficulty.toUpperCase()}
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-amber-400">
+                        <span className="font-bold text-[var(--red)] tabular-nums">
                           +{mod.xp} XP
                         </span>
                       </div>
-                      <h4
-                        className={`text-xs font-bold font-mono line-clamp-1 ${
-                          isCompleted ? 'text-white' : 'text-slate-300'
-                        }`}
-                      >
+                      <h3 className="text-sm font-bold text-[var(--black)] leading-snug">
                         {mod.title}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-snug">
+                      </h3>
+                      <p className="text-xs text-[var(--text-muted)] line-clamp-2 mt-1 leading-relaxed">
                         {mod.description}
                       </p>
                     </div>
 
-                    <div className="pt-2.5 mt-2 border-t border-slate-900 flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-slate-500">
-                        {isCompleted ? 'Status: Completed' : 'Pending Verification'}
+                    <div className="pt-3 mt-3 border-t border-[var(--rule)] flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                        {isCompleted ? 'Completed' : 'Pending'}
                       </span>
                       <button
+                        type="button"
                         onClick={(e) => onCompleteModule(mod.id, mod.xp, e)}
-                        className={`px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold transition flex items-center gap-1.5 ${
+                        className={`px-2.5 py-1 border text-[11px] font-mono font-semibold transition-colors flex items-center gap-1 ${
                           isCompleted
-                            ? 'bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900'
-                            : 'bg-slate-900 hover:bg-cyan-500 hover:text-slate-950 text-slate-300 border border-slate-800'
+                            ? 'bg-[var(--black)] text-[var(--white)] border-[var(--black)] hover:bg-[var(--red)] hover:border-[var(--red)]'
+                            : 'bg-[var(--white)] text-[var(--black)] border-[var(--black)] hover:bg-[var(--red)] hover:text-white hover:border-[var(--red)]'
                         }`}
                       >
                         {isCompleted ? (
                           <>
-                            <CheckCircle2 className="w-3 h-3 text-cyan-400" />
-                            <span>Done (+XP)</span>
+                            <Check className="w-3 h-3" />
+                            <span>Done</span>
                           </>
                         ) : (
                           <>
@@ -226,14 +208,12 @@ export const DailyMilestonesAndTasks: React.FC<DailyMilestonesAndTasksProps> = (
           </div>
         </div>
 
-        {/* Milestone Badges Strip */}
-        <div className="pt-4 border-t border-slate-800/80">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-bold">
-              Milestone Badges & Rank Unlocks
-            </span>
-            <span className="text-[10px] font-mono text-cyan-400">
-              {completedModulesCount >= 4 ? 'All Badges Unlocked' : 'Next Rank in Progress'}
+        {/* Milestone Ranks Strip */}
+        <div className="pt-4 border-t border-[var(--rule)]">
+          <div className="flex items-center justify-between mb-3 text-[10px] font-mono uppercase tracking-wider">
+            <span className="text-[var(--text-muted)] font-semibold">Milestone Ranks</span>
+            <span className="text-[var(--black)] font-semibold">
+              {completedModulesCount >= 4 ? 'All Ranks Unlocked' : 'In Progress'}
             </span>
           </div>
 
@@ -241,135 +221,140 @@ export const DailyMilestonesAndTasks: React.FC<DailyMilestonesAndTasksProps> = (
             {LEARNING_MILESTONES.map((milestone) => {
               const isUnlocked = completedModulesCount >= milestone.requiredModuleCount;
               return (
-                <div
+                <button
                   key={milestone.id}
+                  type="button"
                   onClick={(e) => {
                     if (isUnlocked) {
                       handleTriggerMilestoneConfetti(e, milestone.title);
                     }
                   }}
-                  className={`p-2.5 rounded-xl border text-center font-mono cursor-pointer transition ${
+                  className={`p-3 border text-left font-mono transition-colors ${
                     isUnlocked
-                      ? 'bg-cyan-950/30 border-cyan-500/50 text-cyan-300 hover:scale-105'
-                      : 'bg-slate-950 border-slate-800/60 opacity-40 hover:opacity-60 text-slate-500'
+                      ? 'bg-[var(--gray)] border-[var(--black)] text-[var(--black)] hover:border-[var(--red)]'
+                      : 'bg-[var(--white)] border-[var(--rule)] text-[var(--text-muted)] opacity-60 cursor-default'
                   }`}
                 >
-                  <div className="text-base mb-0.5">{isUnlocked ? '🏆' : '🔒'}</div>
-                  <div className="text-[10px] font-bold truncate text-white">
+                  <div className="flex items-center justify-between mb-1">
+                    {isUnlocked ? (
+                      <Trophy className="w-3.5 h-3.5 text-[var(--red)]" />
+                    ) : (
+                      <Lock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                    )}
+                    <span className="text-[10px] tabular-nums">+{milestone.xpReward} XP</span>
+                  </div>
+                  <div className="text-[11px] font-bold truncate text-[var(--black)]">
                     {milestone.badgeName}
                   </div>
-                  <div className="text-[9px] text-slate-400">
-                    {milestone.requiredModuleCount} Mod. • +{milestone.xpReward} XP
+                  <div className="text-[10px] text-[var(--text-muted)] tabular-nums">
+                    {milestone.requiredModuleCount} Modules
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         </div>
       </div>
 
-      {/* RIGHT BENTO (5 cols): Daily Goals & Tasks to Finish for Points */}
+      {/* RIGHT (5 cols): Daily Goals & Tasks */}
       <div
         id="bento-daily-tasks"
-        className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between space-y-4"
+        className="lg:col-span-5 border-t-2 lg:border-t-0 lg:border-l border-[var(--rule)] pt-6 lg:pt-0 lg:pl-8 flex flex-col justify-between space-y-5"
       >
         <div>
-          {/* Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div className="flex items-end justify-between pb-4 border-b border-[var(--black)]">
             <div>
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-emerald-400" />
-                <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold">
-                  DAILY GOALS & BOUNTIES
-                </span>
-              </div>
-              <h3 className="text-base font-bold text-white font-mono mt-0.5">
-                Earn Daily XP & Mastery
+              <div className="eyebrow font-mono">Daily Bounties</div>
+              <h3 className="text-lg font-bold text-[var(--black)] mt-1">
+                Daily Goals &amp; Mastery
               </h3>
             </div>
 
-            <div className="text-right">
-              <span className="text-xs font-mono font-bold text-emerald-400">
+            <div className="text-right font-mono tabular-nums">
+              <div className="text-xs font-bold text-[var(--red)]">
                 {earnedDailyPoints} / {totalDailyPoints} PTS
-              </span>
-              <div className="text-[10px] font-mono text-slate-500">
+              </div>
+              <div className="text-[10px] text-[var(--text-muted)]">
                 {completedTasksCount}/{totalTasksCount} Finished
               </div>
             </div>
           </div>
 
-          {/* Daily Progress Bar */}
-          <div className="my-3 space-y-1">
-            <div className="flex justify-between text-[10px] font-mono text-slate-400">
-              <span>Daily Goal Completion</span>
-              <span className="text-emerald-400 font-bold">{dailyTasksPercent}%</span>
+          <div className="my-4 space-y-1.5">
+            <div className="flex justify-between text-xs font-mono text-[var(--text-muted)] tabular-nums">
+              <span>Daily Completion</span>
+              <span className="font-bold text-[var(--black)]">{dailyTasksPercent}%</span>
             </div>
-            <div className="h-2 w-full bg-slate-950 rounded-full border border-slate-800 overflow-hidden">
+            <div className="h-2 w-full bg-[var(--rule)]">
               <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full transition-all duration-500"
-                style={{ width: `${Math.max(5, dailyTasksPercent)}%` }}
-              ></div>
+                className="h-full bg-[var(--red)] transition-all duration-300"
+                style={{ width: `${Math.max(4, dailyTasksPercent)}%` }}
+              />
             </div>
           </div>
 
-          {/* Tasks List */}
-          <div className="space-y-2.5 mt-3">
+          <div className="space-y-2.5">
             {dailyTasks.map((task) => (
               <div
                 key={task.id}
                 id={`daily-task-${task.id}`}
-                className={`p-3 rounded-2xl border transition-all ${
+                className={`p-3.5 border transition-colors ${
                   task.completed
-                    ? 'bg-slate-950/90 border-emerald-500/40 text-slate-300 shadow-sm'
-                    : 'bg-slate-950 border-slate-800/80 hover:border-slate-700'
+                    ? 'bg-[var(--gray)] border-[var(--black)]'
+                    : 'bg-[var(--white)] border-[var(--rule)] hover:border-[var(--black)]'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5 flex-1 min-w-0">
                     <button
                       id={`task-toggle-${task.id}`}
+                      type="button"
+                      aria-label={`Toggle completion for ${task.title}`}
+                      aria-pressed={task.completed}
                       onClick={(e) => onCompleteTask(task.id, task.points, e)}
-                      className={`w-5 h-5 rounded-lg border mt-0.5 flex items-center justify-center transition shrink-0 ${
+                      className={`w-5 h-5 border mt-0.5 flex items-center justify-center shrink-0 transition-colors ${
                         task.completed
-                          ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm'
-                          : 'bg-slate-900 border-slate-700 hover:border-emerald-400 text-transparent'
+                          ? 'bg-[var(--black)] text-[var(--white)] border-[var(--black)]'
+                          : 'bg-[var(--white)] border-[var(--black)] text-transparent hover:border-[var(--red)]'
                       }`}
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <Check className="w-3.5 h-3.5" />
                     </button>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         {getCategoryIcon(task.category)}
                         <span
-                          className={`text-xs font-mono font-bold leading-tight line-clamp-1 ${
-                            task.completed ? 'line-through text-slate-400' : 'text-white'
+                          className={`text-xs font-semibold leading-tight truncate ${
+                            task.completed
+                              ? 'line-through text-[var(--text-muted)]'
+                              : 'text-[var(--black)]'
                           }`}
                         >
                           {task.title}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                      <p className="text-[11px] text-[var(--text-muted)] mt-1 leading-relaxed">
                         {task.hint}
                       </p>
                     </div>
                   </div>
 
-                  {/* Task Bounty Points Badge */}
-                  <div className="flex flex-col items-end shrink-0">
+                  <div className="flex flex-col items-end shrink-0 font-mono tabular-nums">
                     <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                      className={`text-[10px] font-bold px-2 py-0.5 border ${
                         task.completed
-                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                          : 'bg-amber-950/60 text-amber-400 border border-amber-800/60'
+                          ? 'bg-[var(--black)] text-[var(--white)] border-[var(--black)]'
+                          : 'bg-[var(--gray)] text-[var(--black)] border-[var(--rule)]'
                       }`}
                     >
                       +{task.points} PTS
                     </span>
                     {task.actionTab && !task.completed && (
                       <button
+                        type="button"
                         onClick={() => onNavigate(task.actionTab!)}
-                        className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 mt-1 flex items-center gap-0.5"
+                        className="text-[10px] font-semibold text-[var(--red)] hover:underline mt-1.5 flex items-center gap-0.5"
                       >
                         <span>Start</span>
                         <ChevronRight className="w-3 h-3" />
@@ -382,26 +367,25 @@ export const DailyMilestonesAndTasks: React.FC<DailyMilestonesAndTasksProps> = (
           </div>
         </div>
 
-        {/* Bonus Daily Multiplier Notice */}
-        <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800/80 flex items-center justify-between text-xs font-mono">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
-            <div>
-              <div className="text-white font-bold text-[11px]">Daily 1.5x Streak Bonus</div>
-              <div className="text-[10px] text-slate-400">
-                Finish all tasks to sustain consecutive daily multiplier.
-              </div>
+        {/* Streak Multiplier Notice */}
+        <div className="p-3.5 bg-[var(--gray)] border border-[var(--rule)] flex items-center justify-between gap-3 text-xs font-mono">
+          <div>
+            <div className="font-bold text-[var(--black)]">Daily 1.5x Streak Bonus</div>
+            <div className="text-[11px] text-[var(--text-muted)] font-sans mt-0.5">
+              Finish all tasks to sustain your consecutive daily multiplier.
             </div>
           </div>
-          {dailyTasksPercent === 100 ? (
-            <span className="px-2.5 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded-xl text-[10px] font-bold">
-              ✓ All Done!
-            </span>
-          ) : (
-            <span className="text-[10px] text-amber-400 font-bold">
-              {totalTasksCount - completedTasksCount} Left
-            </span>
-          )}
+          <span
+            className={`text-[10px] font-bold px-2 py-1 border shrink-0 tabular-nums ${
+              dailyTasksPercent === 100
+                ? 'bg-[var(--black)] text-[var(--white)] border-[var(--black)]'
+                : 'bg-[var(--white)] text-[var(--red)] border-[var(--red)]'
+            }`}
+          >
+            {dailyTasksPercent === 100
+              ? 'COMPLETE'
+              : `${totalTasksCount - completedTasksCount} LEFT`}
+          </span>
         </div>
       </div>
     </div>

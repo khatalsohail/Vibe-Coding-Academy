@@ -33,7 +33,7 @@ class AuthService {
       email: 'student@vibecode.edu',
       username: 'Alex Chen',
       created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
+      avatar: '',
       role: 'student',
       provider: 'password',
       last_login: new Date().toISOString(),
@@ -153,7 +153,7 @@ class AuthService {
         email: email.trim().toLowerCase(),
         username: username.trim(),
         created_at: createdAt,
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username.trim())}`,
+        avatar: '',
         role,
         provider: 'password',
         last_login: createdAt,
@@ -215,7 +215,7 @@ class AuthService {
     const profile = mockProfile || {
       email: 'student.google@vibecode.edu',
       name: 'Google Student',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
+      avatar: '',
     };
 
     try {
@@ -251,7 +251,7 @@ class AuthService {
         email: profile.email,
         username: profile.name,
         created_at: new Date().toISOString(),
-        avatar: profile.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
+        avatar: profile.avatar || '',
         role: 'student',
         provider: 'google',
         last_login: new Date().toISOString(),
